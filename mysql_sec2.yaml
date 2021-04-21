@@ -1,0 +1,28 @@
+---
+   - name: delete test user
+     mysql_user: 
+       login_user: praghv01
+       login_password: 'V1ne_Mysql'
+       name: test
+       state: absent
+     changed_when: false
+   - name: mysql_config_editor
+     expect:
+       command: runuser -l 'mysql' -c "/app/mysql/mysql/bin/mysql_config_editor set --login-path=client --host=localhost --user=maintusr --password"
+       responses:
+         "Enter password:": "B@b3_Ruth"
+     changed_when: false
+     become: true
+   - name: mysql_secure_install interactive answeres
+     expect:
+       command: runuser -l 'mysql' -c "/app/mysql/mysql/bin/mysql_secure_installation -u root -p"
+       responses:
+         "Enter password:": "\n"
+         "Press y|Y for Yes, any other key for No:": "n"
+         "New password:": "G1@nt$08"
+         "Re-enter new password:": "G1@nt$08"
+         "Remove anonymous users? (Press y|Y for Yes, any other key for No) :": "y"
+         "Disallow root login remotely? (Press y|Y for Yes, any other key for No) :": "y"
+         "Remove test database and access to it? (Press y|Y for Yes, any other key for No) :" : "y"
+         "Reload privilege tables now? (Press y|Y for Yes, any other key for No) :": "y"
+     become: true
