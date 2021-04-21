@@ -1,0 +1,34 @@
+---
+   - name: copy the mysql dump script to /home/mysql/scripts
+     copy:
+       src: /app/mysql/mysql/scripts/mysql_backup.ksh
+       dest: /home/mysql/scripts/mysql_backup.ksh
+       remote_src: yes
+       mode: 0775
+       owner: mysql
+     become: true
+   - name: copy the audit clean up script to /home/mysql/scripts
+     copy:
+       src: /app/mysql/mysql/scripts/clean_audit_log.ksh
+       dest: /home/mysql/scripts/clean_audit_log.ksh
+       remote_src: yes
+       mode: 0775
+       owner: mysql
+     become: true
+   - name: cron entry for audit cleanup and  Creates an entry like "15 * * * *  > /dev/null"
+     cron:
+       name: "clean-audit"
+       minute: "15"
+       user: mysql
+       job: "/home/mysql/scripts/clean_audit_log.ksh > /dev/null"
+     become: yes
+   - name: cron entry for backup and  Creates an entry like "00 04 * * *  > /dev/null"
+     cron:
+       name: "mysqldump"
+       minute: "00"
+       hour: "04"
+       user: mysql
+       job: "/home/mysql/scripts/mysql_backup.ksh > /dev/null"
+     become: yes
+   
+
