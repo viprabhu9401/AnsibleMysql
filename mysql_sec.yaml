@@ -1,0 +1,38 @@
+---
+   - name: Start service mysql, if not started
+     shell:
+       cmd: /etc/init.d/mysql start
+     become: true
+     ignore_errors: yes
+   - name: update praghv01 bash_profile
+     lineinfile:
+       path: /home/praghv01/.bash_profile
+       state: present
+       line: "{{ item }}"
+       owner: mysql
+     with_items:
+     - 'PATH=$PATH:$HOME/.local/bin:$HOME/bin'
+     - 'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/app/mysql/mysql/lib'
+     - 'export LD_LIBRARY_PATH'
+     - 'export PATH=$PATH:/app/mysql/mysql/bin'
+     - 'export PATH'
+     become: true
+   - name:  copying mysql admin user sql script to home/praghv01   with owner and permissions
+     copy:
+       src: /app/mysql/mysql/scripts/admin_usr.sql
+       dest: /home/praghv01/admin_usr.sql
+       remote_src: yes
+       owner: praghv01
+       mode: 0775
+     become: true
+   - name: Excute the sql script to create the users
+     shell:
+       cmd: /app/mysql/mysql/bin/mysql -u root  < /home/praghv01/admin_usr.sql
+     changed_when: false
+   - name: delete test user
+     mysql_user: 
+       login_user: praghv01
+       login_password: 'V1ne_Mysql'
+       name: test
+       state: absent
+     changed_when: false
