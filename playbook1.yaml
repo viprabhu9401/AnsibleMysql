@@ -1,0 +1,43 @@
+---
+   - name: Edits mysql bash_profile and adds the necessary lines
+     lineinfile:
+       path: /home/mysql/.bash_profile
+       state: present
+       line: "{{ item }}"
+       owner: mysql
+     with_items:
+     - 'PATH=$PATH:$HOME/.local/bin:$HOME/bin'
+     - 'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/app/mysql/mysql/lib'
+     - 'export LD_LIBRARY_PATH'
+     - 'export PATH=$PATH:/app/mysql/mysql/bin'
+     - 'export PATH'
+     become: true
+   - name: shutdown musql using mysqladmin
+     ansible.builtin.expect:
+       command: runuser -l 'mysql' -c "/app/mysql/mysql/bin/mysqladmin -u root -p shutdown"
+       responses:
+         "Enter password:":  "\n"
+     become: true
+   - name: copy mysql startup script from local to /etc/init.d
+     copy:
+       src: /app/mysql/mysql/scripts/mysql.server
+       dest: /etc/init.d/mysql
+       remote_src: yes
+       mode: 0775
+     become: true
+   - name: add the startup script using chkconfig using shell module
+     shell:
+       cmd: chkconfig --add /etc/init.d/mysql
+     become: true
+   - name:  copy mysql config file from local to /etc/
+     copy:
+       src: /app/mysql/mysql/scripts/mysql.cnf
+       dest: /etc/my.cnf
+       remote_src: yes
+       mode: 0775
+     become: true
+   - name: Start service mysql, if not started
+     shell:
+       cmd: /etc/init.d/mysql start
+     become: true
+
