@@ -1,0 +1,120 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+   - name: yum  install pyMySQL module
+     yum:
+       name: python3-PyMySQL
+       state: latest
+     become: true
+   - name: yum install pexpect module
+     yum:
+       name: python3-pexpect
+       state: latest
+     become: true
+   - name: yum ncurses-compat-libs
+     yum:
+       name: ncurses-compat-libs
+       state: latest
+     become: true
+   - name: Creates mysql binary directory.
+     file:
+       path: /app/mysql
+       state: directory
+     become: true
+   - name: Create mysql group.
+     group:
+       name: mysql
+       state: present
+     become: true
+   - name: create mysql user with group mysql.
+     user:  
+       name: mysql
+       comment: "mysql user to run mysql"
+       group: mysql
+       shell: /bin/bash
+     become: true
+   - name: change ownership for /mysqld1
+     ansible.builtin.file:
+       path: /mysqld1
+       state: directory
+       recurse: yes
+       owner: mysql
+       group: mysql
+     become: true
+   - name: change ownership for /mysqlog
+     ansible.builtin.file:
+       path: /mysqllog
+       state: directory
+       recurse: yes
+       owner: mysql
+       group: mysql
+     become: true
+   - name: change ownership for /mysqlbkup
+     ansible.builtin.file:
+       path: /mysqlbkup
+       state: directory
+       recurse: yes
+       owner: mysql
+       group: mysql
+     become: true
+   - name: change ownership for /mysqlAudit
+     ansible.builtin.file:
+       path: /mysqlAudit
+       state: directory
+       recurse: yes
+       owner: mysql
+       group: mysql
+     become: true
+   - name: create scripts dir under mysql home
+     file:
+       path: /home/mysql/scripts
+       state: directory
+       owner: mysql
+       group: mysql
+       mode: 0755
+     become: true
+   - name: Get the mysql binary from the satellite server
+     ansible.builtin.get_url:
+       url: "https://oirrhst0003.edc.ds1.usda.gov/pub/mysql/mysql{{version}}.tar.gz"
+       dest: "/app/mysql/mysql{{version}}.tar.gz"
+       tmp_dest: /tmp
+       owner: mysql
+       group: mysql
+     become: true
+   - name: extract the  binary file with owner and permissions
+     ansible.builtin.unarchive:
+       src: "/app/mysql/mysql{{version}}.tar.gz"
+       dest: /app/mysql/
+       creates: "/app/mysql/mysql{{version}}"
+       remote_src: yes
+       owner: mysql
+       group: mysql
+       mode: 0755
+     become: true
+   - name: create symbolic link for the mysql binary
+     ansible.builtin.file:
+       src:  "/app/mysql/mysql{{version}}"
+       dest: /app/mysql/mysql
+       owner: mysql
+       group: mysql
+       state: link
+     become: true  
+   - name: Run  the mysql initialize script
+     shell: 
+       cmd: /app/mysql/mysql/scripts/initialize.sh
+     become: true
+   - name: Run  execute the mysqld safe start script
+     shell:
+       cmd: /app/mysql/mysql/scripts/start_mysqlsafe.sh
+     become: true
+   - name: post install tasks
+     include: playbook1.yaml
+   - name: create admin user 
+     include: mysql_sec.yaml
+   - name: secure mysql 
+     include: mysql_sec2.yaml
+   - name: cron jobs
+     include: cron_scripts.yaml
+
+
